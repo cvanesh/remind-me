@@ -10,12 +10,17 @@ import {
   Paper,
   Box,
   IconButton,
-  Avatar
+  Avatar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import { CirclePicker } from 'react-color';
 import { availableIcons, getIconComponent } from '../utils/iconUtils';
+import CategorySelector from '../components/CategorySelector';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -78,6 +83,8 @@ const AddActivityPage = () => {
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
   const [selectedColor, setSelectedColor] = useState('#4CAF50');
+  const [selectedCategory, setSelectedCategory] = useState('Other');
+  const [frequency, setFrequency] = useState('daily');
   
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -86,6 +93,9 @@ const AddActivityPage = () => {
         name: name.trim(),
         icon: selectedIcon,
         color: selectedColor,
+        category: selectedCategory,
+        frequency: frequency,
+        createdAt: new Date().toISOString()
       });
       history.push('/');
     }
@@ -118,6 +128,26 @@ const AddActivityPage = () => {
           required
           margin="normal"
         />
+        
+        <CategorySelector 
+          selectedCategory={selectedCategory}
+          onChange={setSelectedCategory}
+        />
+        
+        <FormControl variant="outlined" fullWidth margin="normal">
+          <InputLabel id="frequency-label">Frequency</InputLabel>
+          <Select
+            labelId="frequency-label"
+            id="frequency"
+            value={frequency}
+            onChange={(e) => setFrequency(e.target.value)}
+            label="Frequency"
+          >
+            <MenuItem value="daily">Daily</MenuItem>
+            <MenuItem value="weekly">Weekly</MenuItem>
+            <MenuItem value="monthly">Monthly</MenuItem>
+          </Select>
+        </FormControl>
         
         <Typography variant="h6" gutterBottom style={{ marginTop: 16 }}>
           Choose an Icon:

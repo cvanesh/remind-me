@@ -1,4 +1,4 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect, useContext, useState } from 'react';
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -16,6 +16,7 @@ import AddActivityPage from './pages/AddActivityPage';
 import StatsPage from './pages/StatsPage';
 import AchievementsPage from './pages/AchievementsPage';
 import SettingsPage from './pages/SettingsPage';
+import OnboardingTutorial from './components/OnboardingTutorial';
 import { ThemeContext } from './context/ThemeContext';
 import { checkDueNotifications } from './utils/notificationService';
 
@@ -46,10 +47,17 @@ function App() {
   const classes = useStyles();
   const [value, setValue] = React.useState(0);
   const { darkMode } = useContext(ThemeContext);
+  const [showTutorial, setShowTutorial] = useState(false);
   
   useEffect(() => {
     // Check for due notifications when app starts
     checkDueNotifications();
+    
+    // Show tutorial for first-time users
+    const tutorialCompleted = localStorage.getItem('tutorialCompleted');
+    if (!tutorialCompleted) {
+      setShowTutorial(true);
+    }
   }, []);
 
   return (
@@ -80,6 +88,12 @@ function App() {
             <BottomNavigationAction label="Settings" icon={<SettingsIcon />} component={Link} to="/settings" />
           </BottomNavigation>
         </Paper>
+        
+        {/* Onboarding Tutorial */}
+        <OnboardingTutorial 
+          open={showTutorial} 
+          onClose={() => setShowTutorial(false)} 
+        />
       </div>
     </Router>
   );
