@@ -7,7 +7,8 @@ import {
   Box,
   Grid,
   LinearProgress,
-  Divider
+  Divider,
+  Chip
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import EmojiEventsIcon from '@material-ui/icons/EmojiEvents';
@@ -62,6 +63,7 @@ const StatsPage = () => {
   const classes = useStyles();
   const { activities } = useContext(ActivityContext);
   const [completedToday, setCompletedToday] = useState([]);
+  const [categoryStats, setCategoryStats] = useState([]);
   
   // Calculate completed activities for today
   useEffect(() => {
@@ -76,6 +78,49 @@ const StatsPage = () => {
     });
     
     setCompletedToday(todayCompleted);
+    
+    // Calculate category stats
+    const categories = {};
+    
+    // Group activities by category
+    activities.forEach(activity => {
+      const category = activity.category || 'General';
+      if (!categories[category]) {
+        categories[category] = {
+          name: category,
+          total: 0,
+          completed: 0,
+          streakSum: 0,
+          longestStreak: 0,
+          activities: []
+        };
+      }
+      
+      categories[category].total += 1;
+      categories[category].activities.push(activity);
+      
+      if (todayCompleted.some(a => a.id === activity.id)) {
+        categories[category].completed += 1;
+      }
+      
+      categories[category].streakSum += activity.streak || 0;
+      
+      if ((activity.streak || 0) > categories[category].longestStreak) {
+        categories[category].longestStreak = activity.streak || 0;
+      }
+    });
+    
+    // Convert to array and calculate percentages
+    const statsArray = Object.values(categories).map(cat => ({
+      ...cat,
+      completionRate: cat.total > 0 ? (cat.completed / cat.total) * 100 : 0,
+      averageStreak: cat.total > 0 ? cat.streakSum / cat.total : 0
+    }));
+    
+    // Sort by completion rate (highest first)
+    statsArray.sort((a, b) => b.completionRate - a.completionRate);
+    
+    setCategoryStats(statsArray);
   }, [activities]);
   
   // Calculate completion percentage for today
@@ -119,6 +164,59 @@ const StatsPage = () => {
             color="primary"
           />
         </Box>
+      </Paper>
+      
+      <Paper className={classes.paper} elevation={3}>
+        <Typography variant="h5" gutterBottom>
+          Category Performance
+        </Typography>
+        
+        {categoryStats.length === 0 ? (
+          <Typography variant="body1">
+            No categories to display yet.
+          </Typography>
+        ) : (
+          categoryStats.map((category) => (
+            <Box key={category.name} mb={3}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6">
+                  {category.name}
+                </Typography>
+                <Chip 
+                  label={`${category.completed}/${category.total}`}
+                  color="primary"
+                  size="small"
+                />
+              </Box>
+              
+              <Box className={classes.progressContainer}>
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2" color="textSecondary">
+                    Completion Rate
+                  </Typography>
+                  <Typography variant="body2" color="primary">
+                    {category.completionRate.toFixed(0)}%
+                  </Typography>
+                </Box>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={category.completionRate} 
+                  className={classes.progress}
+                  color="primary"
+                />
+              </Box>
+              
+              <Box mt={1}>
+                <Typography variant="body2" color="textSecondary">
+                  Average Streak: {category.averageStreak.toFixed(1)} days
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Longest Streak: {category.longestStreak} days
+                </Typography>
+              </Box>
+            </Box>
+          ))
+        )}
       </Paper>
       
       <Paper className={classes.paper} elevation={3}>

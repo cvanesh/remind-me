@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ActivityContext } from '../context/ActivityContext';
 import { 
@@ -14,7 +14,9 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Divider,
+  Chip,
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
@@ -78,27 +80,61 @@ const useStyles = makeStyles((theme) => ({
 const AddActivityPage = () => {
   const classes = useStyles();
   const history = useHistory();
-  const { addActivity } = useContext(ActivityContext);
+  const { addActivity, activities } = useContext(ActivityContext);
   
   const [name, setName] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('');
-  const [selectedColor, setSelectedColor] = useState('#4CAF50');
-  const [selectedCategory, setSelectedCategory] = useState('Other');
+  const [selectedIcon, setSelectedIcon] = useState('book');
+  const [selectedColor, setSelectedColor] = useState('#6200ee');
+  const [selectedCategory, setSelectedCategory] = useState('General');
+  const [customCategory, setCustomCategory] = useState('');
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [frequency, setFrequency] = useState('daily');
+  const [error, setError] = useState('');
+  
+  // Predefined categories
+  const categories = [
+    'General',
+    'Health',
+    'Fitness',
+    'Productivity',
+    'Learning',
+    'Mindfulness',
+    'Social',
+    'Custom...'
+  ];
+  
+  // Get existing categories from activities
+  const existingCategories = activities ? [...new Set(activities.map(a => a.category || 'General'))] : [];
+  const allCategories = [...new Set([...categories, ...existingCategories])];
   
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (name.trim() && selectedIcon) {
-      addActivity({
-        name: name.trim(),
-        icon: selectedIcon,
-        color: selectedColor,
-        category: selectedCategory,
-        frequency: frequency,
-        createdAt: new Date().toISOString()
-      });
-      history.push('/');
+    
+    // Validate inputs
+    if (!name.trim()) {
+      setError('Please enter a name for your activity');
+      return;
     }
+    
+    // Determine the final category
+    const finalCategory = selectedCategory === 'Custom...' ? customCategory : selectedCategory;
+    
+    if (selectedCategory === 'Custom...' && !customCategory.trim()) {
+      setError('Please enter a custom category name');
+      return;
+    }
+    
+    // Add the activity
+    addActivity({
+      name,
+      icon: selectedIcon,
+      color: selectedColor,
+      category: finalCategory,
+      frequency: frequency
+    });
+    
+    // Navigate back to home
+    history.push('/');
   };
   
   const handleColorChange = (color) => {
@@ -118,6 +154,12 @@ const AddActivityPage = () => {
         </Typography>
       </Box>
       
+      {error && (
+        <Typography color="error" style={{ marginBottom: 16 }}>
+          {error}
+        </Typography>
+      )}
+      
       <form onSubmit={handleSubmit} className={classes.form}>
         <TextField
           label="Activity Name"
@@ -129,10 +171,35 @@ const AddActivityPage = () => {
           margin="normal"
         />
         
-        <CategorySelector 
-          selectedCategory={selectedCategory}
-          onChange={setSelectedCategory}
-        />
+        <FormControl variant="outlined" fullWidth margin="normal">
+          <InputLabel id="category-label">Category</InputLabel>
+          <Select
+            labelId="category-label"
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value);
+              setShowCustomCategory(e.target.value === 'Custom...');
+            }}
+            label="Category"
+          >
+            {allCategories.map((cat) => (
+              <MenuItem key={cat} value={cat}>
+                {cat}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        
+        {showCustomCategory && (
+          <TextField
+            label="Custom Category Name"
+            variant="outlined"
+            fullWidth
+            value={customCategory}
+            onChange={(e) => setCustomCategory(e.target.value)}
+            margin="normal"
+          />
+        )}
         
         <FormControl variant="outlined" fullWidth margin="normal">
           <InputLabel id="frequency-label">Frequency</InputLabel>

@@ -23,6 +23,7 @@ import AchievementNotification from '../components/AchievementNotification';
 
 // In the useStyles section of HomePage.js
 
+// In the useStyles section
 const useStyles = makeStyles((theme) => ({
   root: {
     paddingTop: theme.spacing(2),
@@ -99,6 +100,20 @@ const useStyles = makeStyles((theme) => ({
     textAlign: 'center',
     marginBottom: theme.spacing(2),
   },
+  categorySection: {
+    marginBottom: theme.spacing(3),
+  },
+  categoryHeader: {
+    padding: theme.spacing(1, 2),
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: theme.shape.borderRadius,
+    marginBottom: theme.spacing(1),
+    fontWeight: 'bold',
+    color: theme.palette.text.secondary,
+    display: 'flex',
+    alignItems: 'center',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
 }));
 
 // In your HomePage.js
@@ -113,6 +128,23 @@ const HomePage = () => {
   const today = new Date();
   const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
   const formattedDate = today.toLocaleDateString('en-US', dateOptions);
+
+  // Group activities by category
+  const groupedActivities = safeActivities.reduce((groups, activity) => {
+    const category = activity.category || 'General';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(activity);
+    return groups;
+  }, {});
+
+  // Sort categories alphabetically, but keep 'General' at the top
+  const sortedCategories = Object.keys(groupedActivities).sort((a, b) => {
+    if (a === 'General') return -1;
+    if (b === 'General') return 1;
+    return a.localeCompare(b);
+  });
 
   return (
     <Container className={classes.root}>
@@ -132,59 +164,69 @@ const HomePage = () => {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={2}>
-          {safeActivities.map((activity) => {
-            const isCompleted = safeCompletedToday.includes(activity.id);
-            const IconComponent = getIconComponent(activity.icon || 'book');
-            
-            return (
-              <Grid item xs={12} key={activity.id}>
-                <Paper 
-                  className={classes.activityCard} 
-                  style={{ 
-                    borderLeft: `8px solid ${activity.color}`,
-                    opacity: isCompleted ? 0.8 : 1
-                  }}
-                >
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box display="flex" alignItems="center" style={{ maxWidth: '60%' }}>
-                      <Avatar className={classes.activityIcon} style={{ color: activity.color }}>
-                        <IconComponent fontSize="large" />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h6" noWrap>
-                          {activity.name}
-                        </Typography>
-                        {activity.streak > 0 && (
-                          <Chip
-                            icon={<EmojiEventsIcon style={{ fontSize: 16 }} />}
-                            label={`${activity.streak} day streak!`}
-                            size="small"
-                            className={classes.streakChip}
-                          />
-                        )}
-                      </Box>
-                    </Box>
-                    <Button
-                      variant="contained"
-                      color={isCompleted ? "default" : "primary"}
-                      className={isCompleted ? classes.completedButton : classes.completeButton}
-                      onClick={() => isCompleted ? resetActivityCompletion(activity.id) : completeActivity(activity.id)}
-                    >
-                      {isCompleted ? "Completed!" : "Complete!"}
-                    </Button>
-                  </Box>
+        <div>
+          {sortedCategories.map(category => (
+            <div key={category} className={classes.categorySection}>
+              <Typography variant="h6" className={classes.categoryHeader}>
+                {category}
+              </Typography>
+              
+              <Grid container spacing={2}>
+                {groupedActivities[category].map((activity) => {
+                  const isCompleted = safeCompletedToday.includes(activity.id);
+                  const IconComponent = getIconComponent(activity.icon || 'book');
                   
-                  {isCompleted && (
-                    <Box className={classes.completedOverlay}>
-                      <CheckCircleIcon className={classes.completedIcon} />
-                    </Box>
-                  )}
-                </Paper>
+                  return (
+                    <Grid item xs={12} key={activity.id}>
+                      <Paper 
+                        className={classes.activityCard} 
+                        style={{ 
+                          borderLeft: `8px solid ${activity.color}`,
+                          opacity: isCompleted ? 0.8 : 1
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" justifyContent="space-between">
+                          <Box display="flex" alignItems="center" style={{ maxWidth: '60%' }}>
+                            <Avatar className={classes.activityIcon} style={{ color: activity.color }}>
+                              <IconComponent fontSize="large" />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="h6" noWrap>
+                                {activity.name}
+                              </Typography>
+                              {activity.streak > 0 && (
+                                <Chip
+                                  icon={<EmojiEventsIcon style={{ fontSize: 16 }} />}
+                                  label={`${activity.streak} day streak!`}
+                                  size="small"
+                                  className={classes.streakChip}
+                                />
+                              )}
+                            </Box>
+                          </Box>
+                          <Button
+                            variant="contained"
+                            color={isCompleted ? "default" : "primary"}
+                            className={isCompleted ? classes.completedButton : classes.completeButton}
+                            onClick={() => isCompleted ? resetActivityCompletion(activity.id) : completeActivity(activity.id)}
+                          >
+                            {isCompleted ? "Completed!" : "Complete!"}
+                          </Button>
+                        </Box>
+                        
+                        {isCompleted && (
+                          <Box className={classes.completedOverlay}>
+                            <CheckCircleIcon className={classes.completedIcon} />
+                          </Box>
+                        )}
+                      </Paper>
+                    </Grid>
+                  );
+                })}
               </Grid>
-            );
-          })}
-        </Grid>
+            </div>
+          ))}
+        </div>
       )}
     </Container>
   );

@@ -45,6 +45,7 @@ export const ActivityProvider = ({ children }) => {
       streak: 0,
       lastCompleted: null,
       completedDates: [],
+      category: activity.category || 'General', // Add default category
     };
     
     const updatedActivities = [...activities, newActivity];
