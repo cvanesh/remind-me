@@ -1,31 +1,32 @@
-import React, { useContext, useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { useHistory } from 'react-router-dom';
 import { ActivityContext } from '../context/ActivityContext';
+import { ThemeContext } from '../context/ThemeContext';
 import { 
   Container, 
   Typography, 
   Paper, 
   List,
   ListItem,
+  ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
-  IconButton,
+  Switch,
+  Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button,
-  Switch,
   Divider,
-  ListItemIcon,
-  Avatar
+  Box,
+  TextField
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import DeleteIcon from '@material-ui/icons/Delete';
 import NotificationsIcon from '@material-ui/icons/Notifications';
-import Brightness4Icon from '@material-ui/icons/Brightness4';
-import InfoIcon from '@material-ui/icons/Info';
-import { getIconComponent } from '../utils/iconUtils';
+import BrightnessIcon from '@material-ui/icons/Brightness4';
+import SecurityIcon from '@material-ui/icons/Security';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -42,70 +43,102 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: theme.spacing(3),
     borderRadius: 16,
   },
-  listItem: {
-    borderRadius: 8,
-    marginBottom: theme.spacing(1),
-  },
-  activityIcon: {
-    marginRight: theme.spacing(2),
-  },
-  sectionTitle: {
-    marginTop: theme.spacing(3),
-    marginBottom: theme.spacing(1),
-  },
-  divider: {
-    margin: theme.spacing(3, 0),
-  },
-  version: {
-    textAlign: 'center',
+  dangerZone: {
     marginTop: theme.spacing(4),
-    color: theme.palette.text.secondary,
+    borderColor: theme.palette.error.main,
+    borderWidth: 1,
+    borderStyle: 'solid',
   },
-  colorIndicator: {
-    width: 16,
-    height: 16,
-    borderRadius: '50%',
-    display: 'inline-block',
-    marginRight: theme.spacing(1),
+  dangerHeader: {
+    color: theme.palette.error.main,
+    padding: theme.spacing(2),
+  },
+  resetButton: {
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
+    '&:hover': {
+      backgroundColor: theme.palette.error.dark,
+    },
   },
 }));
 
 const SettingsPage = () => {
   const classes = useStyles();
-  const { activities, deleteActivity } = useContext(ActivityContext);
+  const { activities, setActivities, completedToday, setCompletedToday, achievements, setAchievements } = useContext(ActivityContext);
+  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
+  const history = useHistory(); // Add this line to get access to history
   
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [activityToDelete, setActivityToDelete] = useState(null);
-  const [notifications, setNotifications] = useState(
-    localStorage.getItem('notifications') === 'true'
-  );
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem('darkMode') === 'true'
-  );
+  // State for settings
+  const [notifications, setNotifications] = useState(true);
+  const [privacyMode, setPrivacyMode] = useState(false);
   
-  const handleDeleteClick = (activity) => {
-    setActivityToDelete(activity);
-    setDeleteDialogOpen(true);
-  };
+  // State for reset confirmation dialog
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  // Math puzzle states
+  const [mathAnswer, setMathAnswer] = useState('');
+  const [mathPuzzle, setMathPuzzle] = useState({ num1: 0, num2: 0, operation: '+', result: 0 });
+  const [mathError, setMathError] = useState('');
   
-  const handleConfirmDelete = () => {
-    if (activityToDelete) {
-      deleteActivity(activityToDelete.id);
+  // Generate a random math puzzle
+  const generateMathPuzzle = () => {
+    const operations = ['+', '-', '*'];
+    const operation = operations[Math.floor(Math.random() * operations.length)];
+    
+    let num1, num2, result;
+    
+    switch(operation) {
+      case '+':
+        num1 = Math.floor(Math.random() * 50) + 10;
+        num2 = Math.floor(Math.random() * 50) + 10;
+        result = num1 + num2;
+        break;
+      case '-':
+        num1 = Math.floor(Math.random() * 50) + 50;
+        num2 = Math.floor(Math.random() * 40) + 10;
+        result = num1 - num2;
+        break;
+      case '*':
+        num1 = Math.floor(Math.random() * 12) + 2;
+        num2 = Math.floor(Math.random() * 12) + 2;
+        result = num1 * num2;
+        break;
+      default:
+        num1 = 10;
+        num2 = 5;
+        result = 15;
     }
-    setDeleteDialogOpen(false);
+    
+    setMathPuzzle({ num1, num2, operation, result });
+    setMathAnswer('');
+    setMathError('');
   };
   
-  const handleNotificationsChange = (event) => {
-    const newValue = event.target.checked;
-    setNotifications(newValue);
-    localStorage.setItem('notifications', newValue);
+  // Open reset dialog and generate puzzle
+  const openResetDialog = () => {
+    generateMathPuzzle();
+    setResetDialogOpen(true);
   };
   
-  const handleDarkModeChange = (event) => {
-    const newValue = event.target.checked;
-    setDarkMode(newValue);
-    localStorage.setItem('darkMode', newValue);
-    // In a real app, you would apply the theme change here
+  const handleResetApp = () => {
+    // Verify math answer
+    const userAnswer = parseInt(mathAnswer, 10);
+    
+    if (isNaN(userAnswer) || userAnswer !== mathPuzzle.result) {
+      setMathError('Incorrect answer. Please try again.');
+      return;
+    }
+    
+    // Clear all app data
+    localStorage.clear();
+    
+    // Close dialog
+    setResetDialogOpen(false);
+    
+    // Navigate to home page
+    history.push('/');
+    
+    // Reload the page after navigation
+    window.location.reload();
   };
 
   return (
@@ -115,10 +148,6 @@ const SettingsPage = () => {
       </Typography>
       
       <Paper className={classes.paper}>
-        <Typography variant="h6" gutterBottom>
-          App Preferences
-        </Typography>
-        
         <List>
           <ListItem>
             <ListItemIcon>
@@ -126,31 +155,53 @@ const SettingsPage = () => {
             </ListItemIcon>
             <ListItemText 
               primary="Notifications" 
-              secondary="Get reminders for your activities"
+              secondary="Receive reminders for your activities"
             />
             <ListItemSecondaryAction>
               <Switch
                 edge="end"
                 checked={notifications}
-                onChange={handleNotificationsChange}
+                onChange={() => setNotifications(!notifications)}
                 color="primary"
               />
             </ListItemSecondaryAction>
           </ListItem>
           
+          <Divider />
+          
           <ListItem>
             <ListItemIcon>
-              <Brightness4Icon />
+              <BrightnessIcon />
             </ListItemIcon>
             <ListItemText 
               primary="Dark Mode" 
-              secondary="Use dark theme"
+              secondary="Use dark theme throughout the app"
             />
             <ListItemSecondaryAction>
               <Switch
                 edge="end"
                 checked={darkMode}
-                onChange={handleDarkModeChange}
+                onChange={toggleDarkMode}
+                color="primary"
+              />
+            </ListItemSecondaryAction>
+          </ListItem>
+          
+          <Divider />
+          
+          <ListItem>
+            <ListItemIcon>
+              <SecurityIcon />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Privacy Mode" 
+              secondary="Hide sensitive information on the home screen"
+            />
+            <ListItemSecondaryAction>
+              <Switch
+                edge="end"
+                checked={privacyMode}
+                onChange={() => setPrivacyMode(!privacyMode)}
                 color="primary"
               />
             </ListItemSecondaryAction>
@@ -158,82 +209,81 @@ const SettingsPage = () => {
         </List>
       </Paper>
       
-      <Paper className={classes.paper}>
-        <Typography variant="h6" gutterBottom>
-          Manage Activities
+      <Paper className={`${classes.paper} ${classes.dangerZone}`}>
+        <Typography variant="h6" className={classes.dangerHeader}>
+          Danger Zone
         </Typography>
         
-        <List>
-          {activities.map((activity) => {
-            const IconComponent = getIconComponent(activity.icon);
-            return (
-              <ListItem key={activity.id} className={classes.listItem}>
-                <ListItemIcon>
-                  <Avatar style={{ backgroundColor: 'transparent', color: activity.color }}>
-                    <IconComponent />
-                  </Avatar>
-                </ListItemIcon>
-                <ListItemText 
-                  primary={activity.name}
-                  secondary={activity.streak > 0 ? `${activity.streak} day streak` : 'No active streak'}
-                />
-                <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => handleDeleteClick(activity)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </ListItem>
-            );
-          })}
-        </List>
-        
-        {activities.length === 0 && (
-          <Typography variant="body2" color="textSecondary" align="center">
-            No activities to manage. Add some from the Add page!
-          </Typography>
-        )}
-      </Paper>
-      
-      <Paper className={classes.paper}>
-        <Typography variant="h6" gutterBottom>
-          About
-        </Typography>
         <List>
           <ListItem>
             <ListItemIcon>
-              <InfoIcon />
+              <DeleteIcon color="error" />
             </ListItemIcon>
             <ListItemText 
-              primary="HabitHeroes"
-              secondary="A fun way for kids to track daily activities"
+              primary="Reset App" 
+              secondary="This will delete all your activities, achievements, and settings. This action cannot be undone."
+              style={{ marginRight: 100 }} // Add margin to prevent text overlap with button
             />
+            <ListItemSecondaryAction>
+              <Button 
+                variant="contained" 
+                className={classes.resetButton}
+                onClick={openResetDialog}
+              >
+                Reset
+              </Button>
+            </ListItemSecondaryAction>
           </ListItem>
         </List>
+        
+        {/* Reset Confirmation Dialog with Math Puzzle */}
+        <Dialog
+          open={resetDialogOpen}
+          onClose={() => setResetDialogOpen(false)}
+        >
+          <DialogTitle>{"Reset HabitHeroes?"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              This will permanently delete all your activities, achievements, and settings. 
+              This action cannot be undone.
+            </DialogContentText>
+            
+            <Box mt={3}>
+              <Typography variant="subtitle1" gutterBottom>
+                To confirm, please solve this math problem:
+              </Typography>
+              
+              <Typography variant="h6" align="center" gutterBottom>
+                {mathPuzzle.num1} {mathPuzzle.operation} {mathPuzzle.num2} = ?
+              </Typography>
+              
+              <TextField
+                label="Your Answer"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                type="number"
+                value={mathAnswer}
+                onChange={(e) => setMathAnswer(e.target.value)}
+                error={!!mathError}
+                helperText={mathError}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setResetDialogOpen(false)} color="primary">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleResetApp} 
+              className={classes.resetButton}
+              disabled={!mathAnswer}
+            >
+              Reset Everything
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Paper>
-      
-      <Typography variant="body2" className={classes.version}>
-        Version 1.0.0
-      </Typography>
-      
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
-        <DialogTitle>Delete Activity</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{activityToDelete?.name}"? This will remove all streak data for this activity.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmDelete} color="secondary">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };
