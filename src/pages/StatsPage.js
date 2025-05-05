@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { ActivityContext } from '../context/ActivityContext';
 import { 
   Container, 
@@ -60,7 +60,23 @@ const useStyles = makeStyles((theme) => ({
 
 const StatsPage = () => {
   const classes = useStyles();
-  const { activities, completedToday } = useContext(ActivityContext);
+  const { activities } = useContext(ActivityContext);
+  const [completedToday, setCompletedToday] = useState([]);
+  
+  // Calculate completed activities for today
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayCompleted = activities.filter(activity => {
+      if (!activity.lastCompleted) return false;
+      const lastCompletedDate = new Date(activity.lastCompleted);
+      lastCompletedDate.setHours(0, 0, 0, 0);
+      return lastCompletedDate.getTime() === today.getTime();
+    });
+    
+    setCompletedToday(todayCompleted);
+  }, [activities]);
   
   // Calculate completion percentage for today
   const completionPercentage = activities.length > 0
