@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useLocalStorage } from '../hooks/usePerformance';
 import { 
   checkStreakAchievements, 
   checkActivityCountAchievements,
@@ -10,8 +11,9 @@ export const ActivityContext = createContext();
 
 // In your ActivityContext.js
 export const ActivityProvider = ({ children }) => {
-  const [activities, setActivities] = useState([]);
-  const [completedToday, setCompletedToday] = useState([]); // Make sure this is initialized
+  const [activities, setActivities] = useLocalStorage('activities', []);
+  const [completedToday, setCompletedToday] = useLocalStorage('completedToday', []);
+  const [achievements, setAchievements] = useLocalStorage('achievements', []);
   const [achievementNotification, setAchievementNotification] = useState(null);
   
   useEffect(() => {
@@ -58,56 +60,99 @@ export const ActivityProvider = ({ children }) => {
     }
   };
   
-  const completeActivity = (id) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  // Check for achievements after completing an activity
+  const checkAchievements = useCallback((activityId) => {
+    // Implementation of achievement checking logic
+    // This would check for various conditions and add achievements
+    // when appropriate
     
-    setActivities(prevActivities => {
-      const updatedActivities = prevActivities.map(activity => {
-        if (activity.id === id) {
-          const lastCompletedDate = activity.lastCompleted ? new Date(activity.lastCompleted) : null;
-          lastCompletedDate?.setHours(0, 0, 0, 0);
-          
-          // Check if already completed today
-          if (lastCompletedDate && lastCompletedDate.getTime() === today.getTime()) {
-            return activity;
-          }
-          
-          // Check if completed yesterday to continue streak
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-          
-          let newStreak = 1; // Start with 1 for today
-          if (lastCompletedDate) {
-            if (lastCompletedDate.getTime() === yesterday.getTime()) {
-              newStreak = activity.streak + 1; // Continue streak
-            }
-          }
-          
-          const updatedActivity = {
+    // For example:
+    const activity = activities.find(a => a.id === activityId);
+    if (!activity) return;
+    
+    // Check for streak achievements
+    if (activity.streak === 7) {
+      // Add a 7-day streak achievement
+      const newAchievement = {
+        id: uuidv4(),
+        name: "Week Warrior",
+        description: `Completed ${activity.name} for 7 days in a row!`,
+        icon: "🔥",
+        earnedAt: new Date().toISOString(),
+        points: 50
+      };
+      
+      // Check if achievement already exists
+      if (!achievements.some(a => a.name === newAchievement.name)) {
+        setAchievements(prev => [...prev, newAchievement]);
+      }
+    }
+    
+    // Add more achievement checks as needed
+    
+  }, [activities, achievements, setAchievements]);
+  
+  const completeActivity = useCallback((activityId) => {
+    if (completedToday.includes(activityId)) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    setCompletedToday(prev => [...prev, activityId]);
+    
+    setActivities(prevActivities => 
+      prevActivities.map(activity => {
+        if (activity.id === activityId) {
+          const completedDates = [...(activity.completedDates || []), today];
+          return {
             ...activity,
-            lastCompleted: today.toISOString(),
-            streak: newStreak,
-            completedDates: [...(activity.completedDates || []), today.toISOString()]
+            completedDates,
+            streak: activity.streak + 1,
+            lastCompleted: new Date().toISOString()
           };
-          
-          // Check for streak achievements
-          const newAchievements = checkStreakAchievements(id, newStreak);
-          if (newAchievements.length > 0) {
-            setAchievementNotification(newAchievements[0]);
-            
-            // Store achievement time
-            localStorage.setItem(`achievement_time_${newAchievements[0].id}`, Date.now().toString());
-          }
-          
-          return updatedActivity;
         }
         return activity;
-      });
-      
-      return updatedActivities;
-    });
-  };
+      })
+    );
+    
+    // Check for achievements after completing an activity
+    checkAchievements(activityId);
+  }, [completedToday, setCompletedToday, setActivities, checkAchievements]);
+  
+  // Add new function to reset activity completion
+  const resetActivityCompletion = useCallback((activityId) => {
+    // Remove from completedToday
+    setCompletedToday(prev => prev.filter(id => id !== activityId));
+    
+    // Update the activity
+    setActivities(prevActivities => 
+      prevActivities.map(activity => {
+        if (activity.id === activityId) {
+          // Get today's date in ISO format
+          const today = new Date().toISOString().split('T')[0];
+          
+          // Remove today's date from completedDates
+          const completedDates = (activity.completedDates || [])
+            .filter(date => !date.startsWith(today));
+          
+          // Decrease streak if it was increased today
+          const streak = Math.max(0, activity.streak - 1);
+          
+          // Update lastCompleted to the most recent date in completedDates
+          const lastCompleted = completedDates.length > 0 
+            ? completedDates[completedDates.length - 1] 
+            : null;
+          
+          return {
+            ...activity,
+            completedDates,
+            streak,
+            lastCompleted
+          };
+        }
+        return activity;
+      })
+    );
+  }, [setCompletedToday, setActivities]);
   
   const deleteActivity = (id) => {
     setActivities(prevActivities => 
@@ -123,12 +168,12 @@ export const ActivityProvider = ({ children }) => {
     <ActivityContext.Provider 
       value={{ 
         activities, 
-        completedToday, // Make sure this is included
+        completedToday, 
         addActivity, 
-        completeActivity, 
+        completeActivity,
+        resetActivityCompletion, // Add the new function to the context
         deleteActivity,
-        achievementNotification,
-        clearAchievementNotification
+        achievements
       }}
     >
       {children}

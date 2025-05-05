@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { ActivityContext } from '../context/ActivityContext';
 import { makeStyles } from '@material-ui/core/styles';
 import { 
@@ -9,12 +9,19 @@ import {
   Button,
   Box,
   Avatar,
-  Chip
+  Chip,
+  Card,
+  CardContent,
+  IconButton
 } from '@material-ui/core';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import EmojiEventsIcon from '@material-ui/icons/EmojiEvents';
+import AddCircleIcon from '@material-ui/icons/AddCircle';
+import DeleteIcon from '@material-ui/icons/Delete';
 import { getIconComponent } from '../utils/iconUtils';
 import AchievementNotification from '../components/AchievementNotification';
+
+// In the useStyles section of HomePage.js
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -47,6 +54,8 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: theme.spacing(1),
     backgroundColor: theme.palette.secondary.main,
     fontWeight: 'bold',
+    height: 24,
+    fontSize: '0.75rem',
   },
   completedOverlay: {
     position: 'absolute',
@@ -58,14 +67,29 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    pointerEvents: 'none',
   },
   completedIcon: {
     fontSize: 60,
     color: theme.palette.primary.main,
+    opacity: 0.7,
   },
   completeButton: {
     borderRadius: 20,
+    textTransform: 'none',
     fontWeight: 'bold',
+    minWidth: 100,
+  },
+  completedButton: {
+    borderRadius: 20,
+    textTransform: 'none',
+    fontWeight: 'bold',
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.contrastText,
+    '&:hover': {
+      backgroundColor: theme.palette.success.main,
+    },
+    minWidth: 100,
   },
   noActivities: {
     textAlign: 'center',
@@ -80,7 +104,7 @@ const useStyles = makeStyles((theme) => ({
 // In your HomePage.js
 const HomePage = () => {
   const classes = useStyles();
-  const { activities, completedToday, completeActivity } = useContext(ActivityContext);
+  const { activities, completedToday, completeActivity, resetActivityCompletion } = useContext(ActivityContext);
   
   // Add a null check for activities and completedToday
   const safeActivities = activities || [];
@@ -122,35 +146,33 @@ const HomePage = () => {
                     opacity: isCompleted ? 0.8 : 1
                   }}
                 >
-                  <Box display="flex" alignItems="center">
-                    <Avatar className={classes.activityIcon} style={{ color: activity.color }}>
-                      <IconComponent fontSize="large" />
-                    </Avatar>
-                    <Box flexGrow={1}>
-                      <Typography variant="h6">
-                        {activity.name}
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box display="flex" alignItems="center" style={{ maxWidth: '60%' }}>
+                      <Avatar className={classes.activityIcon} style={{ color: activity.color }}>
+                        <IconComponent fontSize="large" />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h6" noWrap>
+                          {activity.name}
+                        </Typography>
                         {activity.streak > 0 && (
                           <Chip
-                            icon={<EmojiEventsIcon />}
+                            icon={<EmojiEventsIcon style={{ fontSize: 16 }} />}
                             label={`${activity.streak} day streak!`}
                             size="small"
                             className={classes.streakChip}
                           />
                         )}
-                      </Typography>
+                      </Box>
                     </Box>
-                    {!isCompleted ? (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        className={classes.completeButton}
-                        onClick={() => completeActivity(activity.id)}
-                      >
-                        Complete!
-                      </Button>
-                    ) : (
-                      <CheckCircleIcon color="primary" fontSize="large" />
-                    )}
+                    <Button
+                      variant="contained"
+                      color={isCompleted ? "default" : "primary"}
+                      className={isCompleted ? classes.completedButton : classes.completeButton}
+                      onClick={() => isCompleted ? resetActivityCompletion(activity.id) : completeActivity(activity.id)}
+                    >
+                      {isCompleted ? "Completed!" : "Complete!"}
+                    </Button>
                   </Box>
                   
                   {isCompleted && (
@@ -169,3 +191,5 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
+// Remove the ActivityCard component as it's not being used
