@@ -21,7 +21,7 @@ import {
 import { makeStyles } from '@material-ui/core/styles';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import { CirclePicker } from 'react-color';
-import { availableIcons, getIconComponent } from '../utils/iconUtils';
+import { getAvailableIcons, getCategoryIcons, getIconComponent } from '../utils/iconUtils';
 import CategorySelector from '../components/CategorySelector';
 
 const useStyles = makeStyles((theme) => ({
@@ -90,6 +90,12 @@ const AddActivityPage = () => {
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [frequency, setFrequency] = useState('daily');
   const [error, setError] = useState('');
+  
+  // For icon filtering
+  const [iconCategory, setIconCategory] = useState('');
+  const availableIcons = iconCategory 
+    ? getCategoryIcons(iconCategory) 
+    : getAvailableIcons();
   
   // Predefined categories
   const categories = [
@@ -220,21 +226,37 @@ const AddActivityPage = () => {
           Choose an Icon:
         </Typography>
         
+        <FormControl fullWidth margin="normal">
+          <InputLabel>Icon Category</InputLabel>
+          <Select
+            value={iconCategory}
+            onChange={(e) => setIconCategory(e.target.value)}
+          >
+            <MenuItem value="">All Icons</MenuItem>
+            <MenuItem value="Kids">Kids Daily Habits</MenuItem>
+            <MenuItem value="Exercise">Exercise</MenuItem>
+            <MenuItem value="Reading">Reading</MenuItem>
+            <MenuItem value="Food">Food & Drink</MenuItem>
+            <MenuItem value="Work">Work & School</MenuItem>
+            <MenuItem value="Leisure">Leisure</MenuItem>
+          </Select>
+        </FormControl>
+        
         <Grid container spacing={2} className={classes.iconGrid}>
-          {availableIcons.map((icon) => {
-            const IconComponent = getIconComponent(icon);
-            return (
-              <Grid item xs={3} key={icon}>
-                <Paper 
-                  className={`${classes.iconPaper} ${selectedIcon === icon ? classes.selectedIcon : ''}`}
-                  onClick={() => setSelectedIcon(icon)}
-                  style={{ borderColor: selectedIcon === icon ? selectedColor : 'transparent' }}
-                >
-                  <IconComponent style={{ color: selectedColor }} />
-                </Paper>
-              </Grid>
-            );
-          })}
+          {availableIcons.map((iconOption) => (
+            <Grid item key={iconOption.value}>
+              <IconButton
+                className={classes.iconButton}
+                color={selectedIcon === iconOption.value ? "primary" : "default"}
+                onClick={() => setSelectedIcon(iconOption.value)}
+              >
+                <iconOption.icon />
+              </IconButton>
+              <Typography variant="caption" display="block" align="center">
+                {iconOption.label}
+              </Typography>
+            </Grid>
+          ))}
         </Grid>
         
         <Typography variant="h6" gutterBottom>

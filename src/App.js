@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -26,10 +26,19 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     minHeight: '100vh',
     backgroundColor: theme.palette.background.default,
+    // Add safe area insets for iPhone X and newer models
+    paddingTop: 'env(safe-area-inset-top)',
+    paddingBottom: 'env(safe-area-inset-bottom)',
+    paddingLeft: 'env(safe-area-inset-left)',
+    paddingRight: 'env(safe-area-inset-right)',
   },
   content: {
     flexGrow: 1,
     paddingBottom: theme.spacing(7),
+    // Add responsive padding for smaller screens
+    [theme.breakpoints.down('xs')]: {
+      paddingBottom: theme.spacing(9),
+    },
   },
   bottomNav: {
     position: 'fixed',
@@ -40,6 +49,8 @@ const useStyles = makeStyles((theme) => ({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     overflow: 'hidden',
+    // Add safe area inset for iPhone X and newer
+    paddingBottom: 'env(safe-area-inset-bottom)',
   },
 }));
 
@@ -50,7 +61,18 @@ function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   
   useEffect(() => {
-    // Check for due notifications when app starts
+    // Disable any geolocation functionality
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then(status => {
+          console.log('Geolocation permission status:', status.state);
+          // We're not requesting permission, just checking status
+        })
+        .catch(error => {
+          console.log('Geolocation permission check failed:', error);
+        });
+    }
+  // Check for due notifications when app starts
     checkDueNotifications();
     
     // Show tutorial for first-time users

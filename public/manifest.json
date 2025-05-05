@@ -1,6 +1,6 @@
 {
   "short_name": "HabitHeroes",
-  "name": "HabitHeroes - Fun Daily Activities Tracker",
+  "name": "HabitHeroes - Track Your Daily Habits",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,13 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#4CAF50",
-  "background_color": "#ffffff"
+  "theme_color": "#6200ee",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "prefer_related_applications": false,
+  "scope": "/",
+  "description": "Track and build your daily habits with HabitHeroes",
+  "categories": ["productivity", "lifestyle", "health"],
+  "screenshots": [],
+  "shortcuts": []
 }

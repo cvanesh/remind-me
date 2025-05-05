@@ -6,22 +6,16 @@ import {
   Typography, 
   Paper, 
   Grid, 
-  Button,
   Box,
   Avatar,
   Chip,
-  Card,
-  CardContent,
   IconButton
 } from '@material-ui/core';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import EmojiEventsIcon from '@material-ui/icons/EmojiEvents';
-import AddCircleIcon from '@material-ui/icons/AddCircle';
-import DeleteIcon from '@material-ui/icons/Delete';
 import { getIconComponent } from '../utils/iconUtils';
 import AchievementNotification from '../components/AchievementNotification';
-
-// In the useStyles section of HomePage.js
 
 // In the useStyles section
 const useStyles = makeStyles((theme) => ({
@@ -41,8 +35,10 @@ const useStyles = makeStyles((theme) => ({
     transition: 'transform 0.2s',
     position: 'relative',
     overflow: 'hidden',
+    cursor: 'pointer',
     '&:hover': {
       transform: 'translateY(-3px)',
+      boxShadow: theme.shadows[2],
     },
   },
   activityIcon: {
@@ -58,39 +54,16 @@ const useStyles = makeStyles((theme) => ({
     height: 24,
     fontSize: '0.75rem',
   },
-  completedOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  statusIndicator: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    pointerEvents: 'none',
   },
   completedIcon: {
-    fontSize: 60,
-    color: theme.palette.primary.main,
-    opacity: 0.7,
+    color: theme.palette.success.main,
   },
-  completeButton: {
-    borderRadius: 20,
-    textTransform: 'none',
-    fontWeight: 'bold',
-    minWidth: 100,
-  },
-  completedButton: {
-    borderRadius: 20,
-    textTransform: 'none',
-    fontWeight: 'bold',
-    backgroundColor: theme.palette.success.light,
-    color: theme.palette.success.contrastText,
-    '&:hover': {
-      backgroundColor: theme.palette.success.main,
-    },
-    minWidth: 100,
+  pendingIcon: {
+    color: theme.palette.text.secondary,
   },
   noActivities: {
     textAlign: 'center',
@@ -146,6 +119,16 @@ const HomePage = () => {
     return a.localeCompare(b);
   });
 
+  // Handle activity card click
+  const handleActivityClick = (activityId) => {
+    const isCompleted = safeCompletedToday.includes(activityId);
+    if (isCompleted) {
+      resetActivityCompletion(activityId);
+    } else {
+      completeActivity(activityId);
+    }
+  };
+
   return (
     <Container className={classes.root}>
       <AchievementNotification />
@@ -184,9 +167,10 @@ const HomePage = () => {
                           borderLeft: `8px solid ${activity.color}`,
                           opacity: isCompleted ? 0.8 : 1
                         }}
+                        onClick={() => handleActivityClick(activity.id)}
                       >
                         <Box display="flex" alignItems="center" justifyContent="space-between">
-                          <Box display="flex" alignItems="center" style={{ maxWidth: '60%' }}>
+                          <Box display="flex" alignItems="center" style={{ maxWidth: '70%' }}>
                             <Avatar className={classes.activityIcon} style={{ color: activity.color }}>
                               <IconComponent fontSize="large" />
                             </Avatar>
@@ -204,21 +188,22 @@ const HomePage = () => {
                               )}
                             </Box>
                           </Box>
-                          <Button
-                            variant="contained"
-                            color={isCompleted ? "default" : "primary"}
-                            className={isCompleted ? classes.completedButton : classes.completeButton}
-                            onClick={() => isCompleted ? resetActivityCompletion(activity.id) : completeActivity(activity.id)}
-                          >
-                            {isCompleted ? "Completed!" : "Complete!"}
-                          </Button>
+                          
+                          {/* Simple status indicator */}
+                          <div className={classes.statusIndicator}>
+                            {isCompleted ? (
+                              <CheckCircleIcon 
+                                className={classes.completedIcon} 
+                                fontSize="large"
+                              />
+                            ) : (
+                              <RadioButtonUncheckedIcon 
+                                className={classes.pendingIcon} 
+                                fontSize="large"
+                              />
+                            )}
+                          </div>
                         </Box>
-                        
-                        {isCompleted && (
-                          <Box className={classes.completedOverlay}>
-                            <CheckCircleIcon className={classes.completedIcon} />
-                          </Box>
-                        )}
                       </Paper>
                     </Grid>
                   );
@@ -233,5 +218,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
-// Remove the ActivityCard component as it's not being used
