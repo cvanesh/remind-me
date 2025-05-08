@@ -132,3 +132,6 @@ export function unregister() {
       });
   }
 }
+
+// Update the PUBLIC_URL to handle GitHub Pages subdirectory
+const PUBLIC_URL = process.env.PUBLIC_URL || '';
